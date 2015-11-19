@@ -17,6 +17,9 @@ const {
  */
 const barrierForward = deviceScreen.width / 4;
 
+
+const endScaleY = 0.7;
+
 /**
  * Check if the current gesture offset bigger than allowed one
  * before opening menu
@@ -42,10 +45,12 @@ class SideMenu extends Component {
      * @type {Number}
      */
     this.prevLeft = 0;
+    this.prevScaleY = 1;
 
     this.state = {
       shouldRenderMenu: false,
       left: new Animated.Value(0),
+      scaleY: new Animated.Value(1),
     };
   }
 
@@ -126,6 +131,17 @@ class SideMenu extends Component {
   handlePanResponderMove(e: Object, gestureState: Object) {
     if (this.state.left.__getValue() * this.menuPositionMultiplier() >= 0) {
       this.state.left.setValue(this.prevLeft + gestureState.dx);
+
+      const progress = Math.abs(gestureState.dx / this.props.openMenuOffset);
+      var scale = 0;
+      if(this.prevScaleY === 1) {
+        scale = 1 - progress * (1 - endScaleY)
+        scale = Math.max(scale, endScaleY)
+      } else {
+        scale = endScaleY + progress * (1 - endScaleY)
+        scale = Math.min(1, scale)
+      }
+      this.state.scaleY.setValue(scale);
     }
   }
 
@@ -164,11 +180,13 @@ class SideMenu extends Component {
     const openOffset = this.menuPositionMultiplier() *
       this.props.openMenuOffset;
 
-    this.props
-      .animationFunction(this.state.left, openOffset)
-      .start();
+    Animated.parallel([
+      this.props.animationFunction(this.state.left, openOffset),
+      this.props.animationFunction(this.state.scaleY, endScaleY),
+    ]).start()
 
     this.prevLeft = openOffset;
+    this.prevScaleY = endScaleY;
 
     if (!this.isOpen) {
       this.isOpen = true;
@@ -188,11 +206,13 @@ class SideMenu extends Component {
   closeMenu() {
     const closeOffset = this.menuPositionMultiplier() * this.props.hiddenMenuOffset;
 
-    this.props
-      .animationFunction(this.state.left, closeOffset)
-      .start();
+    Animated.parallel([
+      this.props.animationFunction(this.state.left, closeOffset),
+      this.props.animationFunction(this.state.scaleY, 1),
+    ]).start()
 
     this.prevLeft = closeOffset;
+    this.prevScaleY = 1;
 
     if (this.isOpen) {
       this.isOpen = false;
@@ -236,7 +256,7 @@ class SideMenu extends Component {
 
     return (
       <Animated.View
-        style={[styles.frontView, { width, height, }, this.props.animationStyle(this.state.left), ]}
+        style={[styles.frontView, { width, height, }, this.props.animationStyle(this.state.left, this.state.scaleY), ]}
         ref={(sideMenu) => this.sideMenu = sideMenu}
         {...this.responder.panHandlers}>
         {this.props.children}
@@ -314,11 +334,12 @@ SideMenu.defaultProps = {
   hiddenMenuOffset: 0,
   onStartShouldSetResponderCapture: () => true,
   onChange: () => {},
-  animationStyle: (value) => {
+  animationStyle: (value, y) => {
     return {
-      transform: [{
-        translateX: value,
-      }, ],
+      transform: [
+        { translateX: value, },
+        {scaleY: y}
+      ],
     };
   },
   animationFunction: (prop, value) => {

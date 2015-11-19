@@ -51,6 +51,7 @@ class SideMenu extends Component {
       shouldRenderMenu: false,
       left: new Animated.Value(0),
       scaleY: new Animated.Value(1),
+      scaleX: new Animated.Value(1),
     };
   }
 
@@ -142,6 +143,7 @@ class SideMenu extends Component {
         scale = Math.min(1, scale)
       }
       this.state.scaleY.setValue(scale);
+      this.state.scaleX.setValue(scale);
     }
   }
 
@@ -182,7 +184,7 @@ class SideMenu extends Component {
 
     Animated.parallel([
       this.props.animationFunction(this.state.left, openOffset),
-      this.props.animationFunction(this.state.scaleY, endScaleY),
+      this.props.animationFunction(this.state.scaleX, endScaleY),
     ]).start()
 
     this.prevLeft = openOffset;
@@ -208,7 +210,7 @@ class SideMenu extends Component {
 
     Animated.parallel([
       this.props.animationFunction(this.state.left, closeOffset),
-      this.props.animationFunction(this.state.scaleY, 1),
+      this.props.animationFunction(this.state.scaleX, 1),
     ]).start()
 
     this.prevLeft = closeOffset;
@@ -338,7 +340,8 @@ SideMenu.defaultProps = {
     return {
       transform: [
         { translateX: value, },
-        {scaleY: y}
+        { scaleY: y },
+        { scaleX: y },
       ],
     };
   },

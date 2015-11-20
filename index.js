@@ -18,7 +18,8 @@ const {
 const barrierForward = deviceScreen.width / 4;
 
 
-const endScaleY = 0.7;
+const endScaleY = 0.65;
+const endTop = 54;
 
 /**
  * Check if the current gesture offset bigger than allowed one
@@ -46,10 +47,12 @@ class SideMenu extends Component {
      */
     this.prevLeft = 0;
     this.prevScaleY = 1;
+    this.prevTop = 0;
 
     this.state = {
       shouldRenderMenu: false,
       left: new Animated.Value(0),
+      top: new Animated.Value(0),
       scaleY: new Animated.Value(1),
       scaleX: new Animated.Value(1),
     };
@@ -144,6 +147,12 @@ class SideMenu extends Component {
       }
       this.state.scaleY.setValue(scale);
       this.state.scaleX.setValue(scale);
+
+      if(this.isOpen) {
+        this.state.top.setValue(endTop * (1 - progress));
+      } else {
+        this.state.top.setValue(endTop * progress);
+      }
     }
   }
 
@@ -184,11 +193,14 @@ class SideMenu extends Component {
 
     Animated.parallel([
       this.props.animationFunction(this.state.left, openOffset),
+      this.props.animationFunction(this.state.top, endTop),
+      this.props.animationFunction(this.state.scaleY, endScaleY),
       this.props.animationFunction(this.state.scaleX, endScaleY),
     ]).start()
 
     this.prevLeft = openOffset;
     this.prevScaleY = endScaleY;
+    this.prevTop = endTop;
 
     if (!this.isOpen) {
       this.isOpen = true;
@@ -210,11 +222,14 @@ class SideMenu extends Component {
 
     Animated.parallel([
       this.props.animationFunction(this.state.left, closeOffset),
+      this.props.animationFunction(this.state.top, 0),
+      this.props.animationFunction(this.state.scaleY, 1),
       this.props.animationFunction(this.state.scaleX, 1),
     ]).start()
 
     this.prevLeft = closeOffset;
     this.prevScaleY = 1;
+    this.prevTop = 0;
 
     if (this.isOpen) {
       this.isOpen = false;
@@ -258,7 +273,11 @@ class SideMenu extends Component {
 
     return (
       <Animated.View
-        style={[styles.frontView, { width, height, }, this.props.animationStyle(this.state.left, this.state.scaleY), ]}
+        style={[
+          styles.frontView,
+          { width, height, },
+          this.props.animationStyle(this.state.left, this.state.scaleY, this.state.top),
+        ]}
         ref={(sideMenu) => this.sideMenu = sideMenu}
         {...this.responder.panHandlers}>
         {this.props.children}
@@ -336,12 +355,13 @@ SideMenu.defaultProps = {
   hiddenMenuOffset: 0,
   onStartShouldSetResponderCapture: () => true,
   onChange: () => {},
-  animationStyle: (value, y) => {
+  animationStyle: (value, y, top) => {
     return {
       transform: [
         { translateX: value, },
         { scaleY: y },
         { scaleX: y },
+        { translateY: top, },
       ],
     };
   },

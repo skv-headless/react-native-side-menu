@@ -1,12 +1,16 @@
 const styles = require('./styles');
-const React = require('react-native');
-const { Dimensions, Animated, } = React;
-const deviceScreen = Dimensions.get('window');
-
+const ReactNative = require('react-native');
+const React = require('react');
 const {
+  Dimensions,
+  Animated,
   PanResponder,
   View,
   TouchableWithoutFeedback,
+} = ReactNative;
+const deviceScreen = Dimensions.get('window');
+
+const {
   Component,
 } = React;
 
